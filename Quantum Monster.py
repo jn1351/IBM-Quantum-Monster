@@ -31,7 +31,7 @@ clicking = False
 num_slice = int(input("How many quantum slices do you want? Type 0 for standard game, and >1 for quantum game. : "))
 num_shots = int(input("How many shots do you want to simulate on slice collision? Must be >0 : "))
 
-font_path = os.path.join("font_folder","IBMPlexMono-Medium.ttf")
+font_path = "IBMPlexMono-Medium.ttf"
 
 # Generate an Aer noise model for device
 f = open('noise_file.txt', 'r')
