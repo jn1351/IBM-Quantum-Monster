@@ -1,6 +1,8 @@
 # IBM-Quantum-Monster
 This repository contains a quantum version of the classic Lake Monster math puzzle. This is a submission to the 2019 IBM Q Awards.
 
+This project is based on Python 3.6, and you are welcome to install each of the required packages yourself including Pygame, Json, and Qiskit. Alternatively you can use our included conda environment, which can be implemented with the below instructions.
+
 We recommend using anaconda to easily install the proper environment to run this program. Here are the steps:
 1. Open Aanaconda prompt
 2. Navigate to director containing the quantumenv.yaml file
