@@ -4,19 +4,15 @@ Created on Fri Dec 13 12:50:02 2019
 
 @author: jn135
 """
-
+# Required imports
 import pygame, sys, math
-from itertools import cycle
-import sys
-import neat
-import os
 import json
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer import noise
 from qiskit import *
 from qiskit.visualization import plot_histogram
 
-
+# Basic variables for design of game
 width = 1024
 height = 720
 radius = 300.0
@@ -27,16 +23,20 @@ bspeed = 1.0
 gspeed = 3.5
 speed_mult = 3.0
 clicking = False
+color = (255,255,255)
 
+# User prompts allowing for n number of slices and n number of shots
 num_slice = int(input("How many quantum slices do you want? Type 0 for standard game, and >1 for quantum game. : "))
 num_shots = int(input("How many shots do you want to simulate on slice collision? Must be >0 : "))
 
+# Filepath to IBM font
 font_path = "IBMPlexMono-Medium.ttf"
 
 # Generate an Aer noise model for device
 f = open('noise_file.txt', 'r')
 noise_dict_file = json.loads(f.read())
 
+# Feature of Aer to export/import noise models from dictionaries
 noise_model = NoiseModel.from_dict(noise_dict_file)
 basis_gates = noise_model.basis_gates
 
@@ -50,7 +50,7 @@ qc.cx(q[0], q[1])
 qc.measure(q, c)
 
 
-
+# Allows for the game to reset after win or loss.
 def restart():
     global monster, boatx, boaty, clicking
     monster = 0.0
@@ -69,13 +69,18 @@ def clear():
     window.fill((33, 39, 42))
     pygame.draw.circle(window, (116, 200, 255), (int(width / 2), int(height / 2)), int(radius * 1.00), 0)
     cut_list = [0]
+
+    # The following lines allow the circle to be divided into quantum slices.
+    if num_slice == 0:
+        cut_list = []
     
-    if num_slice != 0:
+    else:
         slice_step = 360/num_slice
 
         for i in range(1,num_slice):
             cut_angle = cut_list[0] + slice_step*i
             cut_list.append(cut_angle)
+    
 
     for i in range(0,len(cut_list)):
         ibm_line_color=(69, 137 ,255)
@@ -85,35 +90,41 @@ def clear():
 
         
 def redraw(draw_text=False, win=False):
-    global monster, gspeed
+    global monster, gspeed, color
     clear() 
     neg_cut_list = [i * -1 for i in cut_list]
     final_cut_list = cut_list + neg_cut_list
-    if abs((int(round((math.atan2(boaty, boatx)*(180/math.pi))))) - 
-           min(final_cut_list, key=lambda x:abs(x-(int(round((math.atan2(boaty, boatx)*(180/math.pi)))))))) <= 5:
-        color = (255, 0, 0)
-        # Perform noisy simulation
-        backend = Aer.get_backend('qasm_simulator')
-        job_sim = execute(qc, backend,
-                          noise_model=noise_model,
-                          basis_gates=basis_gates, shots=num_shots)
-        sim_result = job_sim.result()
-        result_dict = dict(sim_result.get_counts(qc))
-        
-        if max(result_dict, key=result_dict.get) == '01':
-            monster = math.pi/2
-        if max(result_dict, key=result_dict.get) == '10':
-            monster = -math.pi/2
-        if max(result_dict, key=result_dict.get) == '00':
-            monster = math.pi           
-        if max(result_dict, key=result_dict.get) == '11':
-            monster = 0      
-    else:
-        color = (255, 255, 255) 
+    
+    # The following allows the game to know when the boat has crossed a quantum slice, activating the quantum simulation
+    if cut_list != []:
+        if abs((int(round((math.atan2(boaty, boatx)*(180/math.pi))))) - 
+               min(final_cut_list, key=lambda x:abs(x-(int(round((math.atan2(boaty, boatx)*(180/math.pi)))))))) <= 5:
+            color = (255, 0, 0)
+            # Perform noisy simulation
+            backend = Aer.get_backend('qasm_simulator')
+            job_sim = execute(qc, backend,
+                              noise_model=noise_model,
+                              basis_gates=basis_gates, shots=num_shots)
+            sim_result = job_sim.result()
+            result_dict = dict(sim_result.get_counts(qc))
+            
+            # The result of the quantum simulation will teleport the monster to the corresponding location.
+            if max(result_dict, key=result_dict.get) == '01':
+                monster = math.pi/2
+            if max(result_dict, key=result_dict.get) == '10':
+                monster = -math.pi/2
+            if max(result_dict, key=result_dict.get) == '00':
+                monster = math.pi           
+            if max(result_dict, key=result_dict.get) == '11':
+                monster = 0      
+        else:
+            color = (255, 255, 255) 
     pygame.draw.circle(window, color, (int(width / 2 + boatx), int(height / 2 + boaty)), 6, 2)
     pygame.draw.circle(window, (218, 30, 40),
                        (int(width / 2 + radius * math.cos(monster)), int(height / 2 + radius * math.sin(monster))), 6, 0)
 
+    
+    # All text functions to indicate quantum results, victory, loss, title, and current score.
     if draw_text:
         font = pygame.font.Font(font_path, 35)
         if win:
@@ -165,7 +176,7 @@ def redraw(draw_text=False, win=False):
 
     pygame.display.flip()
 
-
+# Enables the monster to follow the character around the circle
 def updatemonster():
     global monster, gspeed
  
@@ -192,7 +203,7 @@ def moveBoat(x, y):
         boatx += bspeed * speed_mult * dx / mag
         boaty += bspeed * speed_mult * dy / mag
 
-
+# Detects win and adds to speed if the character wins, if not resets the game
 def detectWin():
     global gspeed
     if boatx * boatx + boaty * boaty > radius * radius:
